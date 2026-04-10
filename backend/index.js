@@ -26,6 +26,16 @@ app.set("io", io);
 
 io.on("connection", (socket) => {
   console.log("client connected" + socket.id);
+
+  socket.on("sendMessage", (data) => {
+    const { sender, receiver, userMessage, senderId } = data;
+    console.log(sender, receiver, userMessage, senderId);
+
+    io.to(String(senderId)).emit(
+      "receiveMesssage",
+      "Hello there!!!, I am replying",
+    );
+  });
 });
 
 const PORT = 3000;

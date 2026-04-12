@@ -88,17 +88,26 @@ const io = new Server(server, {
 
 app.set("io", io);
 
+const socketIds = {};
+
 io.on("connection", (socket) => {
   console.log("client connected" + socket.id);
+
+  socket.on("register", (data) => {});
+
+  socket.on("register", (user) => {
+    socketIds[user] = socket.id;
+    console.log("New user registered: " + user + " : " + socket.id);
+    console.log(socketIds);
+  });
 
   socket.on("sendMessage", (data) => {
     const { sender, receiver, userMessage, senderId } = data;
     console.log(sender, receiver, userMessage, senderId);
 
-    io.to(String(senderId)).emit(
-      "receiveMesssage",
-      "Hello there!!!, I am replying",
-    );
+    const receiversSocket = socketIds[receiver];
+
+    io.to(String(receiversSocket)).emit("receiveMesssage", userMessage);
   });
 });
 

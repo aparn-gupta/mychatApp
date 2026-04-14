@@ -3,6 +3,7 @@ const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const bcrypt = require("bcryptjs");
 dotenv.config();
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const {
@@ -12,6 +13,7 @@ const {
   ScanCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const app = express();
+const { randomUUID } = require("node:crypto");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -30,7 +32,7 @@ const client = new DynamoDBClient({
   },
 });
 
-console.log(process.env.AWS_ACCESS_KEY_ID, process.env.AWS_SECRET_ACCESS_KEY);
+// console.log(process.env.AWS_ACCESS_KEY_ID, process.env.AWS_SECRET_ACCESS_KEY);
 
 const docClient = DynamoDBDocumentClient.from(client);
 
@@ -59,13 +61,21 @@ app.get("/list", async (req, res) => {
 app.post("/user/add", async (req, res) => {
   console.log(req.body);
 
-  const { id, username } = req.body;
+  const { username, password, email } = req.body;
+
+  // console.log(randomUUID());
+
+  const hashedPassword = await bcrypt.hash(password, 12);
+  const id = randomUUID();
+  console.log(hashedPassword);
 
   const command = new PutCommand({
     TableName: "Users",
     Item: {
-      id: id,
-      username: username,
+      id,
+      username,
+      password: hashedPassword,
+      email,
     },
   });
   const response = await docClient.send(command);
@@ -75,6 +85,44 @@ app.post("/user/add", async (req, res) => {
     });
   }
   console.log(response);
+});
+
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  // console.log(id);
+
+  const command = new ScanCommand({
+    TableName: "Users",
+    FilterExpression: "username = :u",
+    ExpressionAttributeValues: {
+      ":u": username,
+    },
+  });
+
+  const response = await docClient.send(command);
+
+  let storedUser = response.Items[0];
+
+  if (!storedUser) {
+    res.status(400).json({
+      message: "Username not found",
+    });
+  }
+
+  let result = await bcrypt.compare(password, storedUser.password);
+
+  console.log(result, response.Items[0]);
+
+  if (result) {
+    res.status(200).json({
+      message: "Login Successful",
+    });
+  } else {
+    res.status(401).json({
+      message: "Login failed",
+    });
+  }
 });
 
 const server = http.createServer();

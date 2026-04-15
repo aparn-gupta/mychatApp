@@ -20,7 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   cors({
-    origin: ["http://localhost:8081"],
+    // origin: ["http://localhost:8081"],
+    origin: "*",
   }),
 );
 
@@ -90,7 +91,7 @@ app.post("/user/add", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  // console.log(id);
+  console.log(username, password);
 
   const command = new ScanCommand({
     TableName: "Users",
@@ -105,7 +106,7 @@ app.post("/login", async (req, res) => {
   let storedUser = response.Items[0];
 
   if (!storedUser) {
-    res.status(400).json({
+    return res.status(400).json({
       message: "Username not found",
     });
   }
@@ -129,7 +130,8 @@ const server = http.createServer();
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:8081"],
+    // origin: ["http://localhost:8081"],
+    origin: "*",
   },
   credentials: true,
 });
@@ -141,12 +143,10 @@ const socketIds = {};
 io.on("connection", (socket) => {
   console.log("client connected" + socket.id);
 
-  socket.on("register", (data) => {});
-
   socket.on("register", (user) => {
     socketIds[user] = socket.id;
     console.log("New user registered: " + user + " : " + socket.id);
-    console.log(socketIds);
+    console.log("socketIds: " + socketIds);
   });
 
   socket.on("sendMessage", (data) => {

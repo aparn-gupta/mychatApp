@@ -5,8 +5,8 @@ const server = http.createServer();
 
 const io = new Server(server, {
   cors: {
-    // origin: ["http://localhost:8081"],
-    origin: "*",
+    origin: ["http://localhost:8081"],
+    // origin: "*",
   },
   credentials: true,
 });

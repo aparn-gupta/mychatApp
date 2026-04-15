@@ -14,15 +14,16 @@ const {
 const app = express();
 const { randomUUID } = require("node:crypto");
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 app.use(
   cors({
-    // origin: ["http://localhost:8081"],
-    origin: "*",
+    origin: ["http://localhost:8081"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    // origin: "*",
   }),
 );
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const client = new DynamoDBClient({
   region: "ap-south-2",

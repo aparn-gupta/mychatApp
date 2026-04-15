@@ -16,9 +16,10 @@ const { randomUUID } = require("node:crypto");
 
 app.use(
   cors({
-    origin: ["http://localhost:8081"],
+    origin: "http://localhost:8081",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    // origin: "*",
+    optionsSuccessStatus: 200, // Some legacy browsers choke on 204
   }),
 );
 

@@ -1,4 +1,3 @@
-const { Server } = require("socket.io");
 const http = require("http");
 const express = require("express");
 const cors = require("cors");
@@ -126,40 +125,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-const server = http.createServer();
-
-const io = new Server(server, {
-  cors: {
-    // origin: ["http://localhost:8081"],
-    origin: "*",
-  },
-  credentials: true,
-});
-
-app.set("io", io);
-
-const socketIds = {};
-
-io.on("connection", (socket) => {
-  console.log("client connected" + socket.id);
-
-  socket.on("register", (user) => {
-    socketIds[user] = socket.id;
-    console.log("New user registered: " + user + " : " + socket.id);
-    console.log("socketIds: " + socketIds);
-  });
-
-  socket.on("sendMessage", (data) => {
-    const { sender, receiver, userMessage, senderId } = data;
-    console.log(sender, receiver, userMessage, senderId);
-
-    const receiversSocket = socketIds[receiver];
-
-    io.to(String(receiversSocket)).emit("receiveMesssage", userMessage);
-  });
-});
-
 const PORT = 3000;
 
-server.listen(PORT, () => console.log(`App is listening on ${PORT}`));
-app.listen(3001, () => console.log("Express server is listening on 3001"));
+app.listen(PORT, () => console.log("Express server is listening on 3001"));

@@ -10,6 +10,7 @@ const {
   GetCommand,
   PutCommand,
   ScanCommand,
+  BatchWriteCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const app = express();
 const { randomUUID } = require("node:crypto");
@@ -38,14 +39,20 @@ const client = new DynamoDBClient({
 
 const docClient = DynamoDBDocumentClient.from(client);
 
-app.get("/", async (req, res) => {
+app.get("/", async (req, res, next) => {
   // res.json({ message: "hellooo worllldd!!" });
   const command = new GetCommand({
     TableName: "Users",
     Key: { id: 1 },
   });
-  const response = await docClient.send(command);
-  console.log(response.Item);
+
+  try {
+    const response = await docClient.send(command);
+    console.log(response.Item);
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
 });
 
 app.get("/list", async (req, res) => {
@@ -53,11 +60,16 @@ app.get("/list", async (req, res) => {
     TableName: "Users",
   });
 
-  const response = await client.send(command);
-  console.log(response.Items);
-  res.status(200).json({
-    items: response.Items,
-  });
+  try {
+    const response = await client.send(command);
+    console.log(response.Items);
+    res.status(200).json({
+      items: response.Items,
+    });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
 });
 
 app.post("/user/add", async (req, res) => {
@@ -80,13 +92,62 @@ app.post("/user/add", async (req, res) => {
       email,
     },
   });
-  const response = await docClient.send(command);
-  if (response?.$metadata.httpStatusCode == 200) {
-    res.status(200).json({
-      message: "User created successfully!",
-    });
+
+  try {
+    const response = await docClient.send(command);
+    if (response?.$metadata.httpStatusCode == 200) {
+      res.status(200).json({
+        message: "User created successfully!",
+      });
+    }
+    console.log(response);
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
-  console.log(response);
+});
+
+app.post("/messages", async (req, res) => {
+  const { messages } = req.body;
+  // console.log(messages);
+
+  let messageArray = [];
+
+  messages.forEach((item) => {
+    messageArray.push({
+      PutRequest: {
+        Item: {
+          id: randomUUID(),
+          sender: item.sender,
+          receiver: item.receiver,
+          message: item.message,
+          timestamp: Date.now().toString(),
+        },
+      },
+    });
+  });
+
+  console.log(JSON.stringify(messageArray));
+
+  const command = new BatchWriteCommand({
+    RequestItems: {
+      Messages: messageArray,
+    },
+  });
+
+  try {
+    const response = await docClient.send(command);
+
+    if (response.$metadata.httpStatusCode == 200) {
+      res.status(200).json({
+        message: "messages saved successfully",
+      });
+    }
+    console.log(response);
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
 });
 
 app.post("/login", async (req, res) => {
@@ -101,10 +162,15 @@ app.post("/login", async (req, res) => {
       ":u": username,
     },
   });
+  let storedUser;
 
-  const response = await docClient.send(command);
-
-  let storedUser = response.Items[0];
+  try {
+    const response = await docClient.send(command);
+    storedUser = response.Items[0];
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
 
   if (!storedUser) {
     return res.status(400).json({
@@ -127,6 +193,12 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.use((req, res, err, next) => {
+  res.status(500).json({
+    message: "Internal Server Error",
+  });
+});
+
 const PORT = 3000;
 
-app.listen(PORT, () => console.log("Express server is listening on 3001"));
+app.listen(PORT, () => console.log("Express server is listening on 3000"));

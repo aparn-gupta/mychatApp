@@ -121,7 +121,7 @@ app.post("/messages", async (req, res) => {
           sender: item.sender,
           receiver: item.receiver,
           message: item.message,
-          timestamp: Date.now().toString(),
+          timestamp: item.timestamp,
         },
       },
     });

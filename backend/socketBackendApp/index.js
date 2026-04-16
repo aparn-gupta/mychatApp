@@ -3,6 +3,18 @@ const http = require("http");
 
 const server = http.createServer();
 
+const msgServer = "http://localhost:3000/messages";
+
+const fetchMessages = async (messageList) => {
+  try {
+    const res = await axios.post(msgServer, {
+      messages: messageList,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:8081", // Must match your frontend exactly
@@ -14,6 +26,8 @@ const io = new Server(server, {
 
 const socketIds = {};
 
+let allMessages = [];
+
 io.on("connection", (socket) => {
   console.log("client connected" + socket.id);
 
@@ -23,11 +37,23 @@ io.on("connection", (socket) => {
     console.log("socketIds: " + socketIds);
   });
 
-  socket.on("sendMessage", (data) => {
+  socket.on("sendMessage", async (data) => {
     const { sender, receiver, userMessage, senderId } = data;
     console.log(sender, receiver, userMessage, senderId);
 
     const receiversSocket = socketIds[receiver];
+
+    allMessages.push({
+      sender,
+      receiver,
+      userMessage,
+      timestamp: Date.now().toString(),
+    });
+
+    if (allMessages.length >= 5) {
+      await fetchMessages(allMessages);
+      allMessages = [];
+    }
 
     io.to(String(receiversSocket)).emit("receiveMesssage", userMessage);
   });

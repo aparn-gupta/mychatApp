@@ -216,7 +216,7 @@ app.get("/all_messages", async (req, res, next) => {
 
   const command = new QueryCommand({
     TableName: "Messages",
-    IndexName: "sender_index",
+    IndexName: "conversationId-index",
     KeyConditionExpression: "conversationId = :c",
 
     ExpressionAttributeValues: {

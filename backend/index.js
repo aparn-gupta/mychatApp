@@ -11,6 +11,7 @@ const {
   PutCommand,
   ScanCommand,
   BatchWriteCommand,
+  QueryCommand,
 } = require("@aws-sdk/lib-dynamodb");
 const app = express();
 const { randomUUID } = require("node:crypto");
@@ -39,23 +40,23 @@ const client = new DynamoDBClient({
 
 const docClient = DynamoDBDocumentClient.from(client);
 
-app.get("/", async (req, res, next) => {
-  // res.json({ message: "hellooo worllldd!!" });
-  const command = new GetCommand({
-    TableName: "Users",
-    Key: { id: 1 },
-  });
+// app.get("/", async (req, res, next) => {
+//   // res.json({ message: "hellooo worllldd!!" });
+//   const command = new GetCommand({
+//     TableName: "Users",
+//     Key: { id: 1 },
+//   });
 
-  try {
-    const response = await docClient.send(command);
-    console.log(response.Item);
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
-});
+//   try {
+//     const response = await docClient.send(command);
+//     console.log(response.Item);
+//   } catch (err) {
+//     console.log(err);
+//     next(err);
+//   }
+// });
 
-app.get("/list", async (req, res) => {
+app.get("/list", async (req, res, next) => {
   const command = new ScanCommand({
     TableName: "Users",
   });
@@ -72,7 +73,7 @@ app.get("/list", async (req, res) => {
   }
 });
 
-app.post("/user/add", async (req, res) => {
+app.post("/user/add", async (req, res, next) => {
   console.log(req.body);
 
   const { username, password, email } = req.body;
@@ -107,9 +108,9 @@ app.post("/user/add", async (req, res) => {
   }
 });
 
-app.post("/messages", async (req, res) => {
+app.post("/messages", async (req, res, next) => {
   const { messages } = req.body;
-  // console.log(messages);
+  console.log(messages);
 
   let messageArray = [];
 
@@ -121,6 +122,7 @@ app.post("/messages", async (req, res) => {
           sender: item.sender,
           receiver: item.receiver,
           message: item.message,
+          conversationId: item.conversationId,
           timestamp: item.timestamp,
         },
       },
@@ -150,7 +152,7 @@ app.post("/messages", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/login", async (req, res, next) => {
   const { username, password } = req.body;
 
   console.log(username, password);
@@ -166,6 +168,7 @@ app.post("/login", async (req, res) => {
 
   try {
     const response = await docClient.send(command);
+    console.log(response);
     storedUser = response.Items[0];
   } catch (err) {
     console.log(err);
@@ -180,7 +183,7 @@ app.post("/login", async (req, res) => {
 
   let result = await bcrypt.compare(password, storedUser.password);
 
-  console.log(result, response.Items[0]);
+  // console.log(result, response.Items[0]);
 
   if (result) {
     res.status(200).json({
@@ -188,14 +191,62 @@ app.post("/login", async (req, res) => {
     });
   } else {
     res.status(401).json({
-      message: "Login failed",
+      message: "Wrong password",
     });
   }
 });
 
-app.use((req, res, err, next) => {
+app.get("/all_messages", async (req, res, next) => {
+  const { receiver, sender } = req.query;
+  console.log(receiver, sender);
+  const conversationId = [receiver, sender].sort().join("-");
+  // const command = new QueryCommand({
+  //   TableName: "Messages",
+  //   IndexName: "sender_index",
+  //   KeyConditionExpression: "sender = :s AND receiver = :r",
+
+  //   ExpressionAttributeValues: {
+  //     ":r": receiver,
+  //     ":s": sender,
+  //   },
+  //   // ExpressionAttributeNames: {
+  //   //   "#ts": "timestamp",
+  //   // },
+  // });
+
+  const command = new QueryCommand({
+    TableName: "Messages",
+    IndexName: "sender_index",
+    KeyConditionExpression: "conversationId = :c",
+
+    ExpressionAttributeValues: {
+      ":c": conversationId,
+    },
+    // ExpressionAttributeNames: {
+    //   "#ts": "timestamp",
+    // },
+  });
+
+  try {
+    const response = await docClient.send(command);
+    const sorted = response.Items.sort(
+      (a, b) => Number(b.timestamp) - Number(a.timestamp),
+    );
+
+    console.log(response.timestamp);
+
+    res.status(200).json({
+      messages: sorted,
+    });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+
+app.use((err, req, res, next) => {
   res.status(500).json({
-    message: "Internal Server Error",
+    message: "Internal Server Error" + err,
   });
 });
 

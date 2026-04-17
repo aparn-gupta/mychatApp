@@ -1,5 +1,6 @@
 const { Server } = require("socket.io");
 const http = require("http");
+const axios = require("axios");
 
 const server = http.createServer();
 
@@ -37,28 +38,37 @@ io.on("connection", (socket) => {
     console.log("socketIds: " + socketIds);
   });
 
+  let messageArray;
+
   socket.on("sendMessage", async (data) => {
     const { sender, receiver, userMessage, senderId } = data;
-    console.log(sender, receiver, userMessage, senderId);
+    // console.log(sender, receiver, userMessage, senderId);
 
     const receiversSocket = socketIds[receiver];
+    const conversationId = [receiver, sender].sort().join("-");
 
     allMessages.push({
       sender,
       receiver,
-      userMessage,
+      message: userMessage,
+      conversationId,
       timestamp: Date.now().toString(),
     });
 
-    if (allMessages.length >= 5) {
-      await fetchMessages(allMessages);
-      allMessages = [];
-    }
-
     io.to(String(receiversSocket)).emit("receiveMesssage", userMessage);
+
+    console.log(allMessages);
+    console.log(socketIds);
+
+    if (allMessages.length >= 4) {
+      messageArray = allMessages;
+      allMessages = [];
+
+      await fetchMessages(messageArray);
+    }
   });
 });
 
-const PORT = 3000;
+const PORT = 3002;
 
 server.listen(PORT, () => console.log(`App is listening on ${PORT}`));

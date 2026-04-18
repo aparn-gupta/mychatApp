@@ -4,7 +4,10 @@ const axios = require("axios");
 
 const server = http.createServer();
 
-const msgServer = "http://localhost:3000/messages";
+// const msgServer = "http://localhost:3000/messages";
+
+const msgServer =
+  "https://mychat-app-aparnas-projects-5f64a891.vercel.app/messages";
 
 const fetchMessages = async (messageList) => {
   try {
@@ -41,7 +44,7 @@ io.on("connection", (socket) => {
   let messageArray;
 
   socket.on("sendMessage", async (data) => {
-    const { sender, receiver, userMessage, senderId } = data;
+    const { sender, receiver, userMessage, timestamp } = data;
     // console.log(sender, receiver, userMessage, senderId);
 
     const receiversSocket = socketIds[receiver];
@@ -52,15 +55,20 @@ io.on("connection", (socket) => {
       receiver,
       message: userMessage,
       conversationId,
-      timestamp: Date.now().toString(),
+      // timestamp: Date.now().toString(),
+      timestamp,
     });
 
-    io.to(String(receiversSocket)).emit("receiveMesssage", userMessage);
+    io.to(String(receiversSocket)).emit("receiveMesssage", {
+      userMessage,
+      timestamp,
+      sender,
+    });
 
     console.log(allMessages);
     console.log(socketIds);
 
-    if (allMessages.length >= 4) {
+    if (allMessages.length >= 1) {
       messageArray = allMessages;
       allMessages = [];
 

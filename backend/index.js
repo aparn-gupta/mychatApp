@@ -230,7 +230,7 @@ app.get("/all_messages", async (req, res, next) => {
   try {
     const response = await docClient.send(command);
     const sorted = response.Items.sort(
-      (a, b) => Number(b.timestamp) - Number(a.timestamp),
+      (a, b) => Number(a.timestamp) - Number(b.timestamp),
     );
 
     console.log(response.timestamp);

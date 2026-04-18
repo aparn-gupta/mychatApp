@@ -16,27 +16,14 @@ const {
 const app = express();
 const { randomUUID } = require("node:crypto");
 
-const allowedOrigins = ["http://localhost:8081", "http://127.0.0.1:8081"];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        console.log("Blocked by CORS. Origin was:", origin);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: ["http://localhost:8081", "http://localhost:8081/"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    optionsSuccessStatus: 200, // Some legacy browsers choke on 204
   }),
 );
-
-app.options("*", cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

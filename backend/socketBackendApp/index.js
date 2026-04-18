@@ -2,7 +2,11 @@ const { Server } = require("socket.io");
 const http = require("http");
 const axios = require("axios");
 
-const server = http.createServer();
+const server = http.createServer((req, res) => {
+  if (req.url == "/hello") {
+    res.end("Hello, socket server is running fine!!");
+  }
+});
 
 // const msgServer = "http://localhost:3000/messages";
 

@@ -40,21 +40,11 @@ const client = new DynamoDBClient({
 
 const docClient = DynamoDBDocumentClient.from(client);
 
-// app.get("/", async (req, res, next) => {
-//   // res.json({ message: "hellooo worllldd!!" });
-//   const command = new GetCommand({
-//     TableName: "Users",
-//     Key: { id: 1 },
-//   });
+app.get("/", async (req, res, next) => {
+  // res.json({ message: "hellooo worllldd!!" });
 
-//   try {
-//     const response = await docClient.send(command);
-//     console.log(response.Item);
-//   } catch (err) {
-//     console.log(err);
-//     next(err);
-//   }
-// });
+  res.send("hello, server working correctly!");
+});
 
 app.get("/list", async (req, res, next) => {
   const command = new ScanCommand({
